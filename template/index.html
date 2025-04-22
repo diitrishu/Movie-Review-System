@@ -1,0 +1,109 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Review System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Hero Section -->
+    <div class="relative h-[500px] overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-r from-black to-transparent z-10"></div>
+        <div class="absolute inset-0">
+            <img src="https://images.unsplash.com/photo-1489599929927-ee5135de85d9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" 
+                 class="w-full h-full object-cover" alt="Movie Background">
+        </div>
+        <div class="relative z-20 container mx-auto px-4 h-full flex items-center">
+            <div class="max-w-2xl">
+                <h1 class="text-5xl font-bold mb-6">Welcome to Movie Review System</h1>
+                <p class="text-xl mb-8">Discover, rate, and share your thoughts about the latest movies.</p>
+                <div class="space-x-4">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('user_dashboard') }}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+                            Go to Dashboard
+                        </a>
+                        <a href="{{ url_for('logout') }}" class="bg-gray-700 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition">
+                            Logout
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+                            Login
+                        </a>
+                        <a href="{{ url_for('register') }}" class="bg-gray-700 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition">
+                            Register
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Featured Movies Section -->
+    <div class="container mx-auto px-4 py-16">
+        <h2 class="text-3xl font-bold mb-8">Featured Movies</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for movie in movies %}
+            <div class="bg-gray-800 rounded-lg overflow-hidden shadow-lg transform hover:scale-105 transition duration-300">
+                <div class="relative h-48">
+                    <img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" 
+                         class="w-full h-full object-cover" alt="{{ movie.title }}">
+                    <div class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded">
+                        {{ movie.release_year }}
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-2">{{ movie.title }}</h3>
+                    <div class="flex items-center mb-4">
+                        <span class="bg-gray-700 text-white px-3 py-1 rounded-full text-sm">
+                            {{ movie.genre }}
+                        </span>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        {% for role in movie.roles %}
+                        <span class="bg-gray-700 text-white px-2 py-1 rounded text-sm">
+                            {{ role.person.name }} ({{ role.role_type }})
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('user_dashboard') }}" class="block text-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+                        View Details
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="block text-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+                        Login to Review
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h3 class="text-xl font-bold">Movie Review System</h3>
+                    <p class="text-gray-400">Your trusted source for movie reviews</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-white transition">
+                        <i class="fab fa-facebook"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

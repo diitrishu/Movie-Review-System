@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Movie Review System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .movie-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .movie-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        }
+        .glass-effect {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Navigation -->
+    <nav class="glass-effect fixed w-full z-50">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="{{ url_for('home') }}" class="text-xl font-bold text-blue-400 hover:text-blue-300 transition">
+                        <i class="fas fa-film mr-2"></i>Movie Review System
+                    </a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-gray-300 flex items-center">
+                        <i class="fas fa-user-shield mr-2 text-blue-400"></i>
+                        Admin: {{ current_user.username }}
+                    </span>
+                    <a href="{{ url_for('logout') }}" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition flex items-center">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8 pt-24">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="glass-effect border border-blue-500/30 text-blue-400 px-4 py-3 rounded-lg mb-6 flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Tabs Navigation -->
+        <div class="mb-8">
+            <div class="border-b border-gray-700">
+                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                    <button onclick="showTab('movies')" class="tab-button border-blue-500 text-blue-400 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center">
+                        <i class="fas fa-film mr-2"></i>Movies
+                    </button>
+                    <button onclick="showTab('persons')" class="tab-button border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center">
+                        <i class="fas fa-users mr-2"></i>Persons
+                    </button>
+                    <button onclick="showTab('reviews')" class="tab-button border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center">
+                        <i class="fas fa-star mr-2"></i>Reviews
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Movies Tab -->
+        <div id="movies-tab" class="tab-content">
+            <!-- Add Movie Form -->
+            <div class="glass-effect rounded-lg shadow-lg p-6 mb-8">
+                <h2 class="text-2xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-plus-circle mr-2 text-blue-400"></i>Add New Movie
+                </h2>
+                <form action="{{ url_for('add_movie') }}" method="POST" enctype="multipart/form-data" id="addMovieForm" onsubmit="return validateForm()">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Title</label>
+                            <input type="text" name="title" required
+                                   class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                   placeholder="Movie Title">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Genre</label>
+                            <input type="text" name="genre" required
+                                   class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                   placeholder="Genre">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Release Year</label>
+                            <input type="number" name="release_year" required min="1900" max="2100"
+                                   class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                   placeholder="Year">
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Movie Poster</label>
+                        <div class="flex items-center space-x-4">
+                            <div class="flex-1">
+                                <input type="file" name="image" accept="image/*" id="movieImage" required
+                                       class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                       onchange="previewImage(this)">
+                                <p class="text-sm text-gray-400 mt-1">Allowed formats: PNG, JPG, JPEG, GIF, WebP</p>
+                            </div>
+                            <div class="w-32 h-32 border-2 border-dashed border-gray-600 rounded-lg flex items-center justify-center bg-gray-800/50" id="imagePreview">
+                                <i class="fas fa-image text-gray-400 text-3xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center">
+                        <i class="fas fa-plus mr-2"></i>Add Movie
+                    </button>
+                </form>
+            </div>
+
+            <!-- Movies List -->
+            <div class="glass-effect rounded-lg shadow-lg">
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-film mr-2 text-blue-400"></i>All Movies
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {% for movie in movies %}
+                        <div class="movie-card bg-gray-800 rounded-lg overflow-hidden shadow-lg">
+                            <div class="relative h-48">
+                                {% if movie.image_path %}
+                                <img src="{{ url_for('static', filename=movie.image_path) }}" 
+                                     class="w-full h-full object-cover" 
+                                     alt="{{ movie.title }}"
+                                     onerror="handleImageError(this)">
+                                {% else %}
+                                <div class="w-full h-full bg-gray-700 flex items-center justify-center">
+                                    <i class="fas fa-film text-gray-500 text-4xl"></i>
+                                </div>
+                                {% endif %}
+                                <div class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded-full text-sm">
+                                    {{ movie.release_year }}
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="text-xl font-bold mb-2">{{ movie.title }}</h3>
+                                <div class="flex items-center mb-4">
+                                    <span class="bg-gray-700 text-white px-3 py-1 rounded-full text-sm">
+                                        {{ movie.genre }}
+                                    </span>
+                                </div>
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    {% for role in movie.roles %}
+                                    <span class="bg-gray-700 text-white px-2 py-1 rounded-full text-sm">
+                                        {{ role.person.name }} ({{ role.role_type }})
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                <div class="flex justify-end space-x-2">
+                                    <button onclick="assignPerson('{{ movie.id }}')" 
+                                            class="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition flex items-center">
+                                        <i class="fas fa-user-plus mr-1"></i>Assign Person
+                                    </button>
+                                    <button onclick="deleteMovie('{{ movie.id }}')" 
+                                            class="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 transition flex items-center">
+                                        <i class="fas fa-trash-alt mr-1"></i>Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Persons Tab -->
+        <div id="persons-tab" class="tab-content hidden">
+            <!-- Add Person Form -->
+            <div class="glass-effect rounded-lg shadow-lg p-6 mb-8">
+                <h2 class="text-2xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-user-plus mr-2 text-green-400"></i>Add New Person
+                </h2>
+                <form action="{{ url_for('add_person') }}" method="POST">
+                    <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Name</label>
+                            <input type="text" name="name" required
+                                   class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
+                                   placeholder="Person Name">
+                        </div>
+                    </div>
+                    <button type="submit" class="mt-4 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition flex items-center">
+                        <i class="fas fa-plus mr-2"></i>Add Person
+                    </button>
+            </form>
+            </div>
+
+            <!-- Persons List -->
+            <div class="glass-effect rounded-lg shadow-lg">
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-users mr-2 text-green-400"></i>All Persons
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {% for person in persons %}
+                        <div class="movie-card bg-gray-800 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-bold">{{ person.name }}</h3>
+                                <button onclick="deletePerson('{{ person.id }}')" 
+                                        class="text-red-400 hover:text-red-300 transition">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                {% for role in person.roles %}
+                                <span class="bg-gray-700 text-white px-2 py-1 rounded-full text-sm">
+                                    {{ role.movie.title }} ({{ role.role_type }})
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reviews Tab -->
+        <div id="reviews-tab" class="tab-content hidden">
+            <div class="glass-effect rounded-lg shadow-lg">
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-star mr-2 text-yellow-400"></i>Manage Reviews
+                    </h2>
+                    <div id="reviews" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Person Modal -->
+    <div id="assignPersonModal" class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm hidden overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg glass-effect">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium text-white mb-4 flex items-center">
+                    <i class="fas fa-user-plus mr-2 text-blue-400"></i>Assign Person to Movie
+                </h3>
+                <form id="assignPersonForm" action="{{ url_for('assign_person') }}" method="POST">
+                    <input type="hidden" name="movie_id" id="assignMovieId">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Select Person</label>
+                        <select name="person_id" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" required>
+                            <option value="">Choose a person...</option>
+                            {% for person in persons %}
+                            <option value="{{ person.id }}">{{ person.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Select Role</label>
+                        <select name="role_type" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" required>
+                            <option value="">Choose a role...</option>
+                    <option value="actor">Actor</option>
+                    <option value="director">Director</option>
+                    <option value="producer">Producer</option>
+                </select>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeModal()" 
+                                class="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                            Assign
+                        </button>
+                    </div>
+            </form>
+        </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching functionality
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Show selected tab content
+            document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+            
+            // Update tab button styles
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('border-blue-500', 'text-blue-400');
+                button.classList.add('border-transparent', 'text-gray-400');
+            });
+            
+            // Style selected tab button
+            event.target.classList.remove('border-transparent', 'text-gray-400');
+            event.target.classList.add('border-blue-500', 'text-blue-400');
+        }
+
+        // Modal functionality
+        function assignPerson(movieId) {
+            document.getElementById('assignMovieId').value = movieId;
+            document.getElementById('assignPersonModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('assignPersonModal').classList.add('hidden');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('assignPersonModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        // Fetch and display reviews
+        async function fetchReviews() {
+            const response = await fetch('/reviews');
+            const reviews = await response.json();
+            document.getElementById('reviews').innerHTML = reviews.map(review => `
+                <div class="bg-gray-800/50 p-4 rounded-lg">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-semibold text-white flex items-center">
+                                <i class="fas fa-film mr-2 text-blue-400"></i>${review.movie_title}
+                            </p>
+                            <p class="text-gray-300 flex items-center">
+                                <i class="fas fa-user mr-2 text-green-400"></i>${review.username}
+                            </p>
+                            <p class="mt-2 text-gray-300">${review.review}</p>
+                            <p class="text-yellow-400 mt-1">
+                                ${'★'.repeat(review.rating)}${'☆'.repeat(5-review.rating)}
+                            </p>
+                        </div>
+                        <form action="{{ url_for('delete_review') }}" method="POST" class="ml-4">
+                        <input type="hidden" name="review_id" value="${review.id}">
+                            <button type="submit" 
+                                    class="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 transition flex items-center">
+                                <i class="fas fa-trash-alt mr-1"></i>Delete
+                            </button>
+                    </form>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Delete movie confirmation
+        function deleteMovie(movieId) {
+            if (confirm('Are you sure you want to delete this movie? This action cannot be undone.')) {
+                fetch(`/delete_movie/${movieId}`, {
+                    method: 'POST',
+                }).then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    }
+                });
+            }
+        }
+
+        // Delete person confirmation
+        function deletePerson(personId) {
+            if (confirm('Are you sure you want to delete this person? This action cannot be undone.')) {
+                fetch(`/delete_person/${personId}`, {
+                    method: 'POST',
+                }).then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    }
+                });
+            }
+        }
+
+        // Initial load of reviews
+        fetchReviews();
+        
+        // Refresh reviews every 30 seconds
+        setInterval(fetchReviews, 30000);
+
+        function handleImageError(img) {
+            console.error('Failed to load image:', img.src);
+            img.onerror = null; // Prevent infinite loop
+            img.src = "/static/images/placeholder.jpg";
+            if (!img.classList.contains('error-placeholder')) {
+                img.classList.add('error-placeholder');
+                console.log('Using placeholder image');
+            }
+        }
+
+        function validateForm() {
+            const imageInput = document.getElementById('movieImage');
+            const file = imageInput.files[0];
+            
+            if (!file) {
+                alert('Please select an image file');
+                return false;
+            }
+            
+            // Check file type
+            const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Invalid file type. Please select a PNG, JPG, JPEG, GIF, or WebP file.');
+                return false;
+            }
+            
+            // Check file size (max 16MB)
+            const maxSize = 16 * 1024 * 1024; // 16MB in bytes
+            if (file.size > maxSize) {
+                alert('File is too large. Maximum size is 16MB.');
+                return false;
+            }
+            
+            return true;
+        }
+
+        function previewImage(input) {
+            const preview = document.getElementById('imagePreview');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover rounded-lg">`;
+                    console.log('Preview image loaded successfully');
+                };
+                reader.onerror = function(e) {
+                    console.error('Error loading preview:', e);
+                    preview.innerHTML = '<i class="fas fa-exclamation-circle text-red-500 text-3xl"></i>';
+                };
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                preview.innerHTML = '<i class="fas fa-image text-gray-400 text-3xl"></i>';
+            }
+        }
+    </script>
+</body>
+</html>
